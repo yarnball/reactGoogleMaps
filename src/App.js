@@ -2,13 +2,15 @@ import React, { Component } from 'react';
 
 import {
   withScriptjs,
-  // InfoWindow,
   withGoogleMap,
   GoogleMap,
   Marker } from "react-google-maps";
 import { SearchBox } from "react-google-maps/lib/components/places/SearchBox"
+import { MarkerWithLabel } from "react-google-maps/lib/components/addons/MarkerWithLabel"
 import _ from "lodash"
 import { compose, withProps, lifecycle } from "recompose"
+
+// https://developers.google.com/maps/documentation/javascript/reference#MapOptions
 
 const MapWithASearchBox = compose(
   withProps({
@@ -26,7 +28,7 @@ const MapWithASearchBox = compose(
         center: {
           lat: 41.9, lng: -87.624
         },
-        markers: [],
+        markers: [{ lat: -34.397, lng: 150.644 }, { lat: -34.327, lng: 150.644 }],
         onMapMounted: ref => {
           refs.map = ref;
         },
@@ -54,7 +56,7 @@ const MapWithASearchBox = compose(
             position: place.geometry.location,
           }));
           const nextCenter = _.get(nextMarkers, '0.position', this.state.center);
-
+          // console.log('markers', {lng: nextCenter.lng(), lat: nextCenter.lat() } )
           this.setState({
             center: nextCenter,
             markers: nextMarkers,
@@ -68,19 +70,23 @@ const MapWithASearchBox = compose(
   withGoogleMap
 )(props =>
   <GoogleMap
-    onRightClick={props.onMapClick}
+
+  options={{disableDoubleClickZoom:true,  mapTypeControl: false,
+    zoomControl: true, clickableIcons:false, streetViewControl: false, fullscreenControl: false}}
+    onDblClick={props.onMapClick}
     ref={props.onMapMounted}
     defaultZoom={15}
     center={props.center}
     onBoundsChanged={props.onBoundsChanged}
   >
+
     <SearchBox
       ref={props.onSearchBoxMounted}
       bounds={props.bounds}
       controlPosition={window.google.maps.ControlPosition.TOP_LEFT}
       onPlacesChanged={props.onPlacesChanged}
     >
-    
+   
       <input
         type="text"
         placeholder="Customized your placeholder"
@@ -99,24 +105,55 @@ const MapWithASearchBox = compose(
         }}
       />
     </SearchBox>
-    {props.data.map((marker, index) =>
-      <Marker key={index} position={marker} onClick={props.onToggleOpen}/>
+    {props.markers.map((marker, index) =>
+      <Marker key={index} position={marker.position} />
     )}
+
+    {props.data.map((marker, index) =>
+      <MarkerWithLabel
+      key={index}
+      position={marker}
+      labelAnchor={new window.google.maps.Point(0, 0)}
+      labelStyle={{backgroundColor: "yellow", fontSize: "32px", padding: "16px"}}
+    >
+      <div>Search Res</div>
+    </MarkerWithLabel>
+    )}
+    
+
   </GoogleMap>
 )
 
 class App extends Component {
   state = {
-    places: [{ lat: -34.397, lng: 150.644 }, { lat: -34.327, lng: 150.644 }]
+    places: [{ lat: -34.397, lng: 150.644 }, { lat: -34.327, lng: 150.644 }],
+    addItm:false
+  }
+  placeDiv = (x_pos, y_pos) => {
+  var d = document.getElementById('yourDivId');
+    d.style.position = "absolute";
+    d.style.left = x_pos+'px';
+    d.style.top = y_pos+'px';
   }
   onMapClick = e => {
+    console.log('mapclick', e)
     console.log('TELL me the LONG/LAT', {lng: e.latLng.lng(), lat: e.latLng.lat()})
-    const { places } = this.state
-    this.setState({places:[ {lng: e.latLng.lng(), lat: e.latLng.lat()} , ...places]})
+    this.placeDiv(e.pixel.x, e.pixel.y)
+    this.setState({addItm:true})
+  }
+  cancelItm = e =>{
+    this.setState({addItm:false})
+    this.placeDiv(-1001, -1001)
+
   }
   render() {
+    const { addItm } = this.state
     return (
+      <div>
+      {addItm && <div onClick={this.cancelItm} style={{backgroundColor:'grey', zIndex:'1', position:'absolute', opacity:0.4, height:'100vh', width:'100vw'}}/>}
       <MapWithASearchBox onMapClick={e=>this.onMapClick(e)} data={this.state.places}/>
+      <div style={{zIndex:'2', backgroundColor:'red', padding:'1em'}} id="yourDivId"> Add location <button onClick={this.cancelItm}> clic </button></div>
+      </div>
     );
   }
 }
