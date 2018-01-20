@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "gmap-dragdrop-react": "^1.0.12",
     "google-maps-react": "^1.1.2",
     "react": "^16.2.0",
-    "react-dom": "^16.2.0"
+    "react-dom": "^16.2.0",
+    "react-google-maps": "^9.4.5"
   },
   "devDependencies": {
     "react-scripts": "1.1.0"
