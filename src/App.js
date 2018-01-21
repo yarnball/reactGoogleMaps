@@ -1,4 +1,5 @@
-import React, { Component } from 'react';
+import React, { Component } from 'react'
+import Demo from './GeoLocate'
 
 import {
   withScriptjs,
@@ -9,6 +10,7 @@ import { SearchBox } from "react-google-maps/lib/components/places/SearchBox"
 import { MarkerWithLabel } from "react-google-maps/lib/components/addons/MarkerWithLabel"
 import _ from "lodash"
 import { compose, withProps, lifecycle } from "recompose"
+
 
 // https://developers.google.com/maps/documentation/javascript/reference#MapOptions
 
@@ -22,12 +24,9 @@ const MapWithASearchBox = compose(
   lifecycle({
     componentWillMount() {
       const refs = {}
-
       this.setState({
         bounds: null,
-        center: {
-          lat: 41.9, lng: -87.624
-        },
+        center: this.props.currentPos,
         markers: [{ lat: -34.397, lng: 150.644 }, { lat: -34.327, lng: 150.644 }],
         onMapMounted: ref => {
           refs.map = ref;
@@ -56,7 +55,7 @@ const MapWithASearchBox = compose(
             position: place.geometry.location,
           }));
           const nextCenter = _.get(nextMarkers, '0.position', this.state.center);
-          // console.log('markers', {lng: nextCenter.lng(), lat: nextCenter.lat() } )
+          
           this.setState({
             center: nextCenter,
             markers: nextMarkers,
@@ -65,14 +64,16 @@ const MapWithASearchBox = compose(
         },
       })
     },
+    componentWillReceiveProps(nextProps) {
+      console.log('next', nextProps.hasCurrent)
+      nextProps.hasCurrent || this.setState({center:nextProps.currentPos})
+    },
   }),
   withScriptjs,
   withGoogleMap
 )(props =>
   <GoogleMap
-
-  options={{disableDoubleClickZoom:true,  mapTypeControl: false,
-    zoomControl: true, clickableIcons:false, streetViewControl: false, fullscreenControl: false}}
+    options={{disableDoubleClickZoom:true,  mapTypeControl: false, zoomControl: true, clickableIcons:false, streetViewControl: false, fullscreenControl: false}}
     onDblClick={props.onMapClick}
     ref={props.onMapMounted}
     defaultZoom={15}
@@ -86,16 +87,16 @@ const MapWithASearchBox = compose(
       controlPosition={window.google.maps.ControlPosition.TOP_LEFT}
       onPlacesChanged={props.onPlacesChanged}
     >
-   
       <input
         type="text"
-        placeholder="Customized your placeholder"
+        placeholder="Search for a location"
         style={{
           boxSizing: `border-box`,
           border: `1px solid transparent`,
           width: `240px`,
           height: `32px`,
-          marginTop: `27px`,
+          marginTop: `20px`,
+          marginLeft: `20px`,
           padding: `0 12px`,
           borderRadius: `3px`,
           boxShadow: `0 2px 6px rgba(0, 0, 0, 0.3)`,
@@ -126,8 +127,12 @@ const MapWithASearchBox = compose(
 
 class App extends Component {
   state = {
+    currentPos: {
+         lat: -32.8688, lng: 151.19494699999998
+        }, 
     places: [{ lat: -34.397, lng: 150.644 }, { lat: -34.327, lng: 150.644 }],
-    addItm:false
+    addItm:false,
+    hasCurrent:false
   }
   placeDiv = (x_pos, y_pos) => {
   var d = document.getElementById('yourDivId');
@@ -136,23 +141,37 @@ class App extends Component {
     d.style.top = y_pos+'px';
   }
   onMapClick = e => {
-    console.log('mapclick', e)
-    console.log('TELL me the LONG/LAT', {lng: e.latLng.lng(), lat: e.latLng.lat()})
+    // console.log('mapclick', e)
+    // console.log('TELL me the LONG/LAT', {lng: e.latLng.lng(), lat: e.latLng.lat()})
     this.placeDiv(e.pixel.x, e.pixel.y)
     this.setState({addItm:true})
   }
   cancelItm = e =>{
     this.setState({addItm:false})
-    this.placeDiv(-1001, -1001)
-
+  }
+  magic = e =>{
+    const { places } = this.state
+    const newPos = {
+      lat: e.coords.latitude,
+      lng: e.coords.longitude
+    }
+    // console.log('the magic', e.coords, 'newval', newPos)
+    this.setState({currentPos:newPos, places: [newPos, ...places]}, () => this.setState({hasCurrent:true}) )
+  }
+  noLocn = e =>{
+    const { places } = this.state
+    const ipLocn = { lat: -30.8688, lng: 151.19294699999998 }
+   this.setState({currentPos:ipLocn, places: [ipLocn, ...places]}, () => this.setState({hasCurrent:true}) )
   }
   render() {
     const { addItm } = this.state
+    const addBox = addItm ? {zIndex:'2', backgroundColor:'red', padding:'1em'} : {display: 'none'}
     return (
       <div>
       {addItm && <div onClick={this.cancelItm} style={{backgroundColor:'grey', zIndex:'1', position:'absolute', opacity:0.4, height:'100vh', width:'100vw'}}/>}
-      <MapWithASearchBox onMapClick={e=>this.onMapClick(e)} data={this.state.places}/>
-      <div style={{zIndex:'2', backgroundColor:'red', padding:'1em'}} id="yourDivId"> Add location <button onClick={this.cancelItm}> clic </button></div>
+      <MapWithASearchBox onMapClick={e=>this.onMapClick(e)} data={this.state.places} currentPos={this.state.currentPos} hasCurrent={this.state.hasCurrent}/>
+      <div style={addBox} id="yourDivId"> Add location <button onClick={this.cancelItm}> clic </button></div>
+      <Demo magic={e=>this.magic(e)} noLocn={e=>this.noLocn(e)}/>
       </div>
     );
   }
