@@ -27,7 +27,8 @@ const MapWithASearchBox = compose(
       this.setState({
         bounds: null,
         center: this.props.currentPos,
-        markers: [{ lat: -34.397, lng: 150.644 }, { lat: -34.327, lng: 150.644 }],
+        zoom: this.props.zoomLvl,
+        markers: [{ lat: -31.397, lng: 150.644 }, { lat: -34.327, lng: 150.644 }],
         onMapMounted: ref => {
           refs.map = ref;
         },
@@ -65,8 +66,9 @@ const MapWithASearchBox = compose(
       })
     },
     componentWillReceiveProps(nextProps) {
-      console.log('next', nextProps.hasCurrent)
+      console.log('next', nextProps)
       nextProps.hasCurrent || this.setState({center:nextProps.currentPos})
+      this.setState({zoom:nextProps.zoomLvl})
     },
   }),
   withScriptjs,
@@ -76,7 +78,7 @@ const MapWithASearchBox = compose(
     options={{disableDoubleClickZoom:true,  mapTypeControl: false, zoomControl: true, clickableIcons:false, streetViewControl: false, fullscreenControl: false}}
     onDblClick={props.onMapClick}
     ref={props.onMapMounted}
-    defaultZoom={15}
+    zoom={props.zoom}
     center={props.center}
     onBoundsChanged={props.onBoundsChanged}
   >
@@ -132,6 +134,7 @@ class App extends Component {
         }, 
     places: [{ lat: -34.397, lng: 150.644 }, { lat: -34.327, lng: 150.644 }],
     addItm:false,
+    zoomLvl: 10,
     hasCurrent:false
   }
   placeDiv = (x_pos, y_pos) => {
@@ -149,29 +152,43 @@ class App extends Component {
   cancelItm = e =>{
     this.setState({addItm:false})
   }
-  magic = e =>{
+  gotLocn = e =>{
     const { places } = this.state
     const newPos = {
       lat: e.coords.latitude,
       lng: e.coords.longitude
     }
     // console.log('the magic', e.coords, 'newval', newPos)
-    this.setState({currentPos:newPos, places: [newPos, ...places]}, () => this.setState({hasCurrent:true}) )
+    this.setState({currentPos:newPos, places: [newPos, ...places], zoomLvl: 18, hasCurrent:false }, () => this.setState({hasCurrent:true}) )
   }
   noLocn = e =>{
     const { places } = this.state
-    const ipLocn = { lat: -30.8688, lng: 151.19294699999998 }
-   this.setState({currentPos:ipLocn, places: [ipLocn, ...places]}, () => this.setState({hasCurrent:true}) )
+    let ipLocn = {}
+    fetch('https://freegeoip.net/json/')
+      .then((response) => response.json())
+      .then((json) => {
+        console.log(json);
+        ipLocn = {lat:json.latitude, lng:json.longitude}
+        console.log('ipLocn', ipLocn)
+      })
+      .then(()=> this.setState({currentPos:ipLocn, zoomLvl:14 }, () => this.setState({hasCurrent:true}) ))
+      .catch((error) => {
+       //console.error(error);
+    })
+  }
+  fetchingPos = e =>{
+    console.log('IM LOADING!', e)
   }
   render() {
-    const { addItm } = this.state
+    console.log('cur zom', this.state.zoomLvl)
+    const { addItm, currentPos, places, hasCurrent, zoomLvl } = this.state
     const addBox = addItm ? {zIndex:'2', backgroundColor:'red', padding:'1em'} : {display: 'none'}
     return (
       <div>
       {addItm && <div onClick={this.cancelItm} style={{backgroundColor:'grey', zIndex:'1', position:'absolute', opacity:0.4, height:'100vh', width:'100vw'}}/>}
-      <MapWithASearchBox onMapClick={e=>this.onMapClick(e)} data={this.state.places} currentPos={this.state.currentPos} hasCurrent={this.state.hasCurrent}/>
+      <MapWithASearchBox onMapClick={e=>this.onMapClick(e)} data={places} currentPos={currentPos} hasCurrent={hasCurrent} zoomLvl={zoomLvl}/>
       <div style={addBox} id="yourDivId"> Add location <button onClick={this.cancelItm}> clic </button></div>
-      <Demo magic={e=>this.magic(e)} noLocn={e=>this.noLocn(e)}/>
+      <Demo gotLocn={e=>this.gotLocn(e)} noLocn={e=>this.noLocn(e)} fetchingPos={e=>this.fetchingPos(e)}/>
       </div>
     );
   }

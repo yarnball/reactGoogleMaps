@@ -1,39 +1,12 @@
-import React from "react";
-
-import Geolocation from "react-geolocation";
-
-export default (props) => {
-
-  return (
-    <Geolocation
-      onSuccess={props.magic}
-      onError={props.noLocn}
-      render={({
-        fetchingPosition,
-        position: { coords: { latitude, longitude } = {} } = {},
-        error,
-        getCurrentPosition
-      }) =>
-        <div>
-        {JSON.stringify(error)}
-          <button onClick={getCurrentPosition}>Get Position</button>
-          {error &&
-            <div>
-              {error.message}
-            </div>}
-          <pre>
-            latitude: {latitude} 
-            longitude: {longitude}
-          </pre>
-        </div>}
-    />
-  );
-};
-
+// import React from 'react';
 // import {geolocated} from 'react-geolocated';
 
 // class Demo extends React.Component {
+//   state = { currentLocn: ''}
+
 //   render() {
+//     // this.props.gotLocn(this.props)
+//     this.props.coords !== null && console.log('Run this function ONCE', this.props.coords)
 //     return !this.props.isGeolocationAvailable
 //       ? <div>Your browser does not support Geolocation</div>
 //       : !this.props.isGeolocationEnabled
@@ -57,4 +30,37 @@ export default (props) => {
 //     enableHighAccuracy: false,
 //   },
 //   userDecisionTimeout: 5000,
-// })(Demo)
+// })(Demo);
+
+import React from "react";
+
+import Geolocation from "react-geolocation";
+
+export default (props) => {
+
+  return (
+    <Geolocation
+      onSuccess={props.gotLocn}
+      onError={props.noLocn}
+      fetchingPosition={props.fetchingPos}
+      render={({
+        fetchingPosition,
+        position: { coords: { latitude, longitude } = {} } = {},
+        error,
+        getCurrentPosition
+      }) =>
+        <div>
+        {JSON.stringify(error)}
+          <button onClick={getCurrentPosition}>Get Position</button>
+          {error &&
+            <div>
+              {error.message}
+            </div>}
+          <pre>
+            latitude: {latitude} 
+            longitude: {longitude}
+          </pre>
+        </div>}
+    />
+  );
+};
